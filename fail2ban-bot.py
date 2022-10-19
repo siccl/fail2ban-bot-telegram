@@ -26,7 +26,9 @@ bot.
 import logging
 import subprocess
 from decouple import config
+# Telegram Bot Authorization Token
 TOKEN = config('TOKEN')
+# Telegram Bot Authorized Users (Telegram User ID)
 AUTORIZED_USERS = config('AUTORIZED_USERS')
 import ipaddress
 def validate_ip_address(ip_string):
@@ -63,6 +65,7 @@ logger = logging.getLogger(__name__)
 # context.
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
+    # Check if user is authorized
     user_id = str(update.effective_user.id)
     if user_id in AUTORIZED_USERS:
         user = update.effective_user
@@ -76,6 +79,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
+    # Check if user is authorized
     user_id = str(update.effective_user.id)
     if user_id in AUTORIZED_USERS:
         help_text = "This bot is used to unban IP from Fail2Ban. \n\n"
@@ -94,15 +98,19 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Unban IP replayed."""
+    # Check if user is authorized
     user_id = str(update.effective_user.id)
     if user_id in AUTORIZED_USERS:
+        # Get IP from message
         try:
             IP = context.args[0]
         except IndexError:
             await update.message.reply_text("Please, specify an IP" + user_id)
             return
+        # Check if IP is valid
         if validate_ip_address(IP):
             await context.bot.send_message(chat_id=update.effective_chat.id, text = "Unbanning : " + IP)
+            # Unban IP
             output = subprocess.check_output("sudo fail2ban-client unban " + IP, shell=True)
             if (output.decode('utf-8')=="0"):
                 await context.bot.send_message(chat_id=update.effective_chat.id, text = "IP has not banned")
@@ -114,8 +122,10 @@ async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("You are not authorized to use this bot")
 
 async def banned(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Check if user is authorized
     user_id = str(update.effective_user.id)
     if user_id in AUTORIZED_USERS:
+        # Get all jails and banned IPs
         output = subprocess.check_output("sudo fail2ban-client banned", shell=True)
         await context.bot.send_message(chat_id=update.effective_chat.id, text = output.decode('utf-8'))
     else:
