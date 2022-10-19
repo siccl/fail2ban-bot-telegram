@@ -7,7 +7,9 @@ When you have rules to block any suspicions actions and need to UnBan or check a
 ## Based on the python-telegram-bot examples
 
 you can see original code on :
+
 <https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/echobot.py>
+
 
 First, a few handler functions are defined. Then, those functions are passed to
 the Application and registered at their respective places.
