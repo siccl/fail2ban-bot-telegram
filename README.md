@@ -29,3 +29,9 @@ Run on user with sudo privileges.
 python fail2ban-bot.py
 
 Press Ctrl-C on the command line or send a signal to the process to stop the bot.
+
+## Tested on
+
+Fedora fail2ban v1.0.1
+
+Ubuntu fail2ban v0.11.1
