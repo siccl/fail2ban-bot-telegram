@@ -140,7 +140,8 @@ async def banned(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 text_var = output.decode('utf-8')
                 subline = text_var.split('\n', 10)[8]
                 line = subline.split(':',1)[1]
-                await context.bot.send_message(chat_id=update.effective_chat.id, text = i.strip() + " Banned IPs " + line)
+                if (line != ""):
+                    await context.bot.send_message(chat_id=update.effective_chat.id, text = i.strip() + " Banned IPs " + line)
         else:
             # Get all jails and banned IPs
             output = subprocess.check_output("sudo fail2ban-client banned", shell=True)
