@@ -125,9 +125,26 @@ async def banned(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Check if user is authorized
     user_id = str(update.effective_user.id)
     if user_id in AUTORIZED_USERS:
-        # Get all jails and banned IPs
-        output = subprocess.check_output("sudo fail2ban-client banned", shell=True)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text = output.decode('utf-8'))
+        # check fail2ban version
+        output = subprocess.check_output("fail2ban-client -V", shell=True)
+        if (output.decode('utf-8').split(".")[0]=="0"):
+            # Get all jails and banned IPs jail by jail
+            output = subprocess.check_output("sudo fail2ban-client status", shell=True)
+            text_var = output.decode('utf-8')
+            subline = text_var.split('\n', 1)[1]
+            line = subline.split('`',1)[1]
+            text = line.split(':',1)[1]
+            lista = text.split(',')
+            for i in lista:
+                output = subprocess.check_output("sudo fail2ban-client status " + i, shell=True)
+                text_var = output.decode('utf-8')
+                subline = text_var.split('\n', 10)[8]
+                line = subline.split(':',1)[1]
+                await context.bot.send_message(chat_id=update.effective_chat.id, text = i.strip() + " Banned IPs " + line)
+        else:
+            # Get all jails and banned IPs
+            output = subprocess.check_output("sudo fail2ban-client banned", shell=True)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text = output.decode('utf-8'))
     else:
         await update.message.reply_text("You are not authorized to use this bot")
 
