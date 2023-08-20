@@ -26,11 +26,14 @@ Run on user with sudo privileges.
 
 ## Run the bot with
 pip3 install -r requirements.txt
+
 python3 fail2ban-bot.py
 
 ## Tested on
 
 Fedora fail2ban v1.0.1
+
 Ubuntu fail2ban v0.11.2
+
 
 Press Ctrl-C on the command line or send a signal to the process to stop the bot.
