@@ -1,5 +1,3 @@
-logging
-subprocess
+telegram
 python-decouple
-ipaddress
 python-telegram-bot

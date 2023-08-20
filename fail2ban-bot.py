@@ -12,21 +12,11 @@ First, a few handler functions are defined. Then, those functions are passed to
 the Application and registered at their respective places.
 Then, the bot is started and runs until we press Ctrl-C on the command line.
 
-Find out your user ID by sending a message to the bot and accessing the address, with the bot token:
-https://api.telegram.org/bot0000000000:00000000000000000000000000000000000/getUpdates
 
 Usage:
     Edit the .env file with your own values.
     We recommend using a screen session to run the bot in the background.
     Run on user with sudo privileges.
-
-Example variables for .env file:
-    TOKEN=0000000000:00000000000000000000000000000000000
-    AUTORIZED_USERS=000000000
-
-You can set your default jail to block IPs:
-    DEFAULT_BAN_JAIL=manual_ban
-
 
 Run the bot with:
     python fail2ban-bot.py
@@ -36,14 +26,15 @@ Run the bot with:
 
 """
 
+import os
 import logging
 import subprocess
-from decouple import config
 import ipaddress
+from decouple import config
 
-from telegram import __version__ as TG_VER
 from telegram import ForceReply, Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram import __version__ as TG_VER
 
 # variables
 TOKEN = config('TOKEN', default='', cast=str)
@@ -52,12 +43,6 @@ DEFAULT_BAN_JAIL = config('DEFAULT_BAN_JAIL', default='', cast=str)
 
 
 
-def validate_ip_address(ip_string):
-   try:
-       ip_object = ipaddress.ip_address(ip_string)
-       return True
-   except ValueError:
-       return False
 
 try:
     from telegram import __version_info__
@@ -77,8 +62,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Define a few command handlers. These usually take the two arguments update and
-# context.
+
+# Define a few command handlers. These usually take the two arguments update and context.
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
     # Check if user is authorized
@@ -94,8 +79,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_html(f"You are not authorized to use this bot, {user.mention_html()}! ")
 
 
-
-
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
     # Check if user is authorized
@@ -109,6 +92,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         help_text += "/help => Show this help message \n"
         help_text += "/ban IP JAIL => BAN IP \n"
         help_text += "/unban IP => Unban IP \n"
+        help_text += "/check IP => Check if an IP is banned in some cage \n"
         help_text += "/reload JAIL => Reload jail and unban all your IP addresses \n"
         help_text += "/banned => Show banned IPs by Jail \n"
         help_text += "/start_jail => Start a specific jail \n"
@@ -121,6 +105,15 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message."""
     await update.message.reply_text(update.message.text + " is not a valid command, use /help to see the valid commands")
+
+
+def validate_ip_address(ip_string):
+   try:
+       ip_object = ipaddress.ip_address(ip_string)
+       return True
+   except ValueError:
+       return False
+
 
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Check if user is authorized
@@ -216,6 +209,52 @@ async def reload_jail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_html(f"You are not authorized to use this bot, {user.mention_html()}! ")
 
 
+async def check_ip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: ## 9500 character limit per message
+    # Check if user is authorized
+    user_id = str(update.effective_user.id)
+    user = update.effective_user
+
+    if user_id in AUTORIZED_USERS:
+        # Get IP from message
+        try:
+            IP = context.args[0]
+        except IndexError:
+            await update.message.reply_text("Please, specify an IP")
+            return
+
+        # check fail2ban version
+        output = subprocess.check_output("fail2ban-client -V", shell=True)
+        if (output.decode('utf-8').split(".")[0]=="0"):
+            # Get all jails and banned IPs jail by jail
+            output = subprocess.check_output("sudo fail2ban-client status", shell=True)
+            text_var = output.decode('utf-8')
+            subline = text_var.split('\n', 1)[1]
+            line = subline.split('`',1)[1]
+            text = line.split(':',1)[1]
+            lista = text.split(',')
+            jail_names = []
+
+            for i in lista:
+                try:
+                    output = subprocess.check_output("sudo fail2ban-client get " + i + " banned " + IP, shell=True)
+                    if output.decode('utf-8')[0] == "1":
+                        jail_names.append(i)
+                except subprocess.CalledProcessError:
+                    pass  # ignore errors if the command fails
+            if jail_names:
+                jails_text = "\n".join(jail_names)
+                message = IP + " is inside the cages: \n\n- " + jails_text
+            else:
+                message = IP + " is not in any jails"
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+        else:
+            # Get all jails and banned IPs
+            output = subprocess.check_output("sudo fail2ban-client banned", shell=True)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text = output.decode('utf-8'))
+    else:
+        await update.message.reply_html(f"You are not authorized to use this bot, {user.mention_html()}! ")
+
+
 async def banned(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: ## 9500 character limit per message
     # Check if user is authorized
     user_id = str(update.effective_user.id)
@@ -263,7 +302,6 @@ async def start_jail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await update.message.reply_text("Please, specify an jail or use the default: " + DEFAULT_BAN_JAIL)
             return
         await context.bot.send_message(chat_id=update.effective_chat.id, text = "Starting Jail : " + JAIL)
-        # Unban IP
         output = subprocess.check_output("sudo fail2ban-client start " + JAIL, shell=True)
         output_service = subprocess.check_output("sudo /etc/init.d/fail2ban restart ", shell=True)
         if (output.decode('utf-8')=="0"):
@@ -288,7 +326,6 @@ async def stop_jail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await update.message.reply_text("Please, specify an jail or use the default: " + DEFAULT_BAN_JAIL)
             return
         await context.bot.send_message(chat_id=update.effective_chat.id, text = "Stopping jail : " + JAIL)
-        # Unban IP
         output = subprocess.check_output("sudo fail2ban-client start " + JAIL, shell=True)
         output_service = subprocess.check_output("sudo /etc/init.d/fail2ban restart ", shell=True)
         if (output.decode('utf-8')=="0"):
@@ -298,8 +335,6 @@ async def stop_jail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     else:
         await update.message.reply_html(f"You are not authorized to use this bot, {user.mention_html()}! ")
-
-
 
 
 
@@ -314,6 +349,7 @@ def main() -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("ban", ban))
     application.add_handler(CommandHandler("unban", unban))
+    application.add_handler(CommandHandler("check", check_ip))
     application.add_handler(CommandHandler("reload", reload_jail))
     application.add_handler(CommandHandler("banned", banned))
     application.add_handler(CommandHandler("start_jail", start_jail))
@@ -326,5 +362,14 @@ def main() -> None:
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
 
-if __name__ == "__main__":
-    main()
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if os.path.exists(".env"):
+    if __name__ == "__main__":
+        main()
+else:
+    help_text_env = "Example variables for .env file: \n\n"
+    help_text_env += "TOKEN=0000000000:00000000000000000000000000000000000 \n"
+    help_text_env += "AUTORIZED_USERS=000000000 \n"
+    help_text_env += "DEFAULT_BAN_JAIL=manual_ban \n\n"
+    print("file Not Found in current directory: \n     " + script_dir + "/.env \n\n" + help_text_env)
+    exit()
