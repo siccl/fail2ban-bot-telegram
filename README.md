@@ -12,7 +12,6 @@ Useful when you don't have full server access and need to:
 This script does not remove all IPs from all jails, to do so, access the server.
 
 ## Based on the python-telegram-bot examples
-
 you can see original code on :
 
 <https://github.com/python-telegram-bot/python-telegram-bot/blob/master/examples/echobot.py>
@@ -24,7 +23,6 @@ the Application and registered at their respective places.
 Then, the bot is started and runs until we press Ctrl-C on the command line.
 
 ## Usage
-
 We recommend using a screen session to run the bot in the background.
 
 Run on user with sudo privileges.
@@ -43,10 +41,16 @@ Find out your user ID by sending a message to the bot and accessing this address
 
 https://api.telegram.org/bot0000000000:00000000000000000000000000000000000/getUpdates
 
-## Run the bot with
+## How run the bot
+#### install the necessary packages:
 pip3 install -r requirements.txt
 
+
+#### to run in foreground:
 python3 fail2ban-bot.py
+
+#### to run in background:
+2>/dev/null 1>&2 python3 fail2ban-bot.py &
 
 ## Tested on
 
