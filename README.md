@@ -25,13 +25,12 @@ We recommend using a screen session to run the bot in the background.
 Run on user with sudo privileges.
 
 ## Run the bot with
-
-python fail2ban-bot.py
-
-Press Ctrl-C on the command line or send a signal to the process to stop the bot.
+pip3 install -r requirements.txt
+python3 fail2ban-bot.py
 
 ## Tested on
 
 Fedora fail2ban v1.0.1
+Ubuntu fail2ban v0.11.2
 
-Ubuntu fail2ban v0.11.1
+Press Ctrl-C on the command line or send a signal to the process to stop the bot.
