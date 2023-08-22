@@ -92,9 +92,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         help_text += "/help => Show this help message \n"
         help_text += "/ban IP JAIL => BAN IP \n"
         help_text += "/unban IP => Unban IP \n"
-        help_text += "/check IP => Check if an IP is banned in some cage \n"
-        help_text += "/reload JAIL => Reload jail and unban all your IP addresses \n"
+        help_text += "/check IP => Check if an IP is banned in some jail \n"
         help_text += "/banned => Show banned IPs by Jail \n"
+        help_text += "/reload JAIL => Reload jail and unban all your IP addresses \n"
         help_text += "/start_jail => Start a specific jail \n"
         help_text += "/stop_jail => Stop a specific jail \n"
         await update.message.reply_text(help_text)
@@ -243,7 +243,7 @@ async def check_ip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None: 
                     pass  # ignore errors if the command fails
             if jail_names:
                 jails_text = "\n".join(jail_names)
-                message = IP + " is inside the cages: \n\n- " + jails_text
+                message = IP + " is inside the jails: \n\n- " + jails_text
             else:
                 message = IP + " is not in any jails"
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
